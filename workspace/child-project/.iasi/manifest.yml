@@ -1,0 +1,9 @@
+version: 0.1.0
+profile: workspace
+
+installed:
+  instructions: all
+  commands: all
+  skills: all
+  mcp: all
+  adapters: all

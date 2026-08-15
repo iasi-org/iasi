@@ -6,11 +6,8 @@ import (
 	"strings"
 )
 
-const Version = "0.1.0"
-
-const content = "version: 0.1.0\nprofile: workspace\n\ninstalled:\n  instructions: all\n  commands: all\n  skills: all\n  mcp: all\n"
-
-func Write(path string) error {
+func Write(path, version string) error {
+	content := fmt.Sprintf("version: %s\nprofile: workspace\n\ninstalled:\n  instructions: all\n  commands: all\n  skills: all\n  mcp: all\n  adapters: all\n", version)
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("write manifest: %w", err)
 	}

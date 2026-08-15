@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -18,11 +19,19 @@ func TestFindFromCurrentDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Path != filepath.Join(workspace, ".iasi") || result.Version != "0.1.0" {
+	if result.Path != filepath.Join(workspace, ".iasi") || result.InstalledVersion != "0.1.0" {
 		t.Fatalf("unexpected installation: %+v", result)
 	}
 	if result.Counts["instructions"] != 2 || result.Counts["commands"] != 1 || result.Counts["skills"] != 0 || result.Counts["mcp"] != 0 {
 		t.Fatalf("unexpected counts: %+v", result.Counts)
+	}
+}
+
+func TestFormatShowsInstalledAndBinaryVersions(t *testing.T) {
+	result := Result{Type: "workspace", Path: `C:\workspace\.iasi`, InstalledVersion: "0.1.0", Counts: map[string]int{}}
+	output := Format(result, "0.2.0")
+	if !strings.Contains(output, "Installed : 0.1.0") || !strings.Contains(output, "Binary    : 0.2.0") {
+		t.Fatalf("expected both versions in output: %s", output)
 	}
 }
 

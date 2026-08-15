@@ -12,8 +12,8 @@ import (
 var ErrNotInstalled = errors.New("IASI is not installed for this location")
 
 type Result struct {
-	Path, Type, Version string
-	Counts              map[string]int
+	Path, Type, InstalledVersion string
+	Counts                       map[string]int
 }
 
 func Find(start string) (Result, error) {
@@ -25,10 +25,10 @@ func Find(start string) (Result, error) {
 				return Result{}, err
 			}
 			counts := make(map[string]int)
-			for _, category := range []string{"instructions", "commands", "skills", "mcp"} {
+			for _, category := range []string{"instructions", "commands", "skills", "mcp", "adapters"} {
 				counts[category] = countFiles(filepath.Join(installation, category))
 			}
-			return Result{Path: installation, Type: "workspace", Version: version, Counts: counts}, nil
+			return Result{Path: installation, Type: "workspace", InstalledVersion: version, Counts: counts}, nil
 		}
 		parent := filepath.Dir(current)
 		if parent == current {
@@ -38,8 +38,8 @@ func Find(start string) (Result, error) {
 	return Result{}, ErrNotInstalled
 }
 
-func Format(result Result) string {
-	return fmt.Sprintf("IASI\n\nType    : %s\nPath    : %s\nVersion : %s\n\nInstructions : %d\nCommands     : %d\nSkills       : %d\nMCP          : %d\n", result.Type, result.Path, result.Version, result.Counts["instructions"], result.Counts["commands"], result.Counts["skills"], result.Counts["mcp"])
+func Format(result Result, binaryVersion string) string {
+	return fmt.Sprintf("IASI\n\nType      : %s\nPath      : %s\nInstalled : %s\nBinary    : %s\n\nInstructions : %d\nCommands     : %d\nSkills       : %d\nMCP          : %d\nAdapters     : %d\n", result.Type, result.Path, result.InstalledVersion, binaryVersion, result.Counts["instructions"], result.Counts["commands"], result.Counts["skills"], result.Counts["mcp"], result.Counts["adapters"])
 }
 
 func countFiles(root string) int {

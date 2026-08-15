@@ -2,17 +2,16 @@ package install
 
 import (
 	"fmt"
-	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"time"
 
 	"iasi-cli/internal/manifest"
 )
 
-var categories = []string{"instructions", "commands", "skills", "mcp"}
+var categories = []string{"instructions", "commands", "skills", "mcp", "adapters"}
 
-func Run(workspace, sourceRoot string) (string, error) {
+func Run(workspace string, methodology fs.FS, version string) (string, error) {
 	target := filepath.Join(workspace, ".iasi")
 	if _, err := os.Lstat(target); err == nil {
 		return "", fmt.Errorf("IASI is already installed in this workspace: %s", target)
@@ -20,8 +19,8 @@ func Run(workspace, sourceRoot string) (string, error) {
 		return "", fmt.Errorf("check installation path: %w", err)
 	}
 
-	temporary := filepath.Join(workspace, fmt.Sprintf(".iasi.tmp-%d", time.Now().UnixNano()))
-	if err := os.Mkdir(temporary, 0o755); err != nil {
+	temporary, err := os.MkdirTemp(workspace, ".iasi.tmp-")
+	if err != nil {
 		return "", fmt.Errorf("create installation directory: %w", err)
 	}
 	defer os.RemoveAll(temporary)
@@ -31,12 +30,11 @@ func Run(workspace, sourceRoot string) (string, error) {
 		if err := os.MkdirAll(destination, 0o755); err != nil {
 			return "", fmt.Errorf("create %s directory: %w", category, err)
 		}
-		source := filepath.Join(sourceRoot, "agentics", category)
-		if err := copyDirectory(source, destination); err != nil {
+		if err := copyDirectory(methodology, filepath.ToSlash(filepath.Join("agentics", category)), destination); err != nil {
 			return "", fmt.Errorf("copy %s: %w", category, err)
 		}
 	}
-	if err := manifest.Write(filepath.Join(temporary, "manifest.yml")); err != nil {
+	if err := manifest.Write(filepath.Join(temporary, "manifest.yml"), version); err != nil {
 		return "", err
 	}
 	if err := os.Rename(temporary, target); err != nil {
@@ -45,22 +43,18 @@ func Run(workspace, sourceRoot string) (string, error) {
 	return target, nil
 }
 
-func copyDirectory(source, destination string) error {
-	info, err := os.Stat(source)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	if err != nil {
+func copyDirectory(source fs.FS, directory, destination string) error {
+	if _, err := fs.Stat(source, directory); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return err
 	}
-	if !info.IsDir() {
-		return fmt.Errorf("source is not a directory: %s", source)
-	}
-	return filepath.Walk(source, func(path string, info os.FileInfo, walkErr error) error {
+	return fs.WalkDir(source, directory, func(path string, info fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		relative, err := filepath.Rel(source, path)
+		relative, err := filepath.Rel(directory, path)
 		if err != nil {
 			return err
 		}
@@ -69,23 +63,12 @@ func copyDirectory(source, destination string) error {
 		}
 		target := filepath.Join(destination, relative)
 		if info.IsDir() {
-			return os.MkdirAll(target, info.Mode().Perm())
+			return os.MkdirAll(target, 0o755)
 		}
-		return copyFile(path, target, info.Mode().Perm())
+		data, err := fs.ReadFile(source, path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
 	})
-}
-
-func copyFile(source, destination string, mode os.FileMode) error {
-	input, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer input.Close()
-	output, err := os.OpenFile(destination, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return err
-	}
-	defer output.Close()
-	_, err = io.Copy(output, input)
-	return err
 }

@@ -1,49 +1,35 @@
 package source
 
 import (
-	"errors"
+	"embed"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
+	"strings"
 )
 
-type Locator struct {
-	Executable string
-	WorkingDir string
+//go:generate powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/sync-agentics.ps1
+
+// The build process synchronizes the repository's agentics directory here.
+//
+//go:embed embedded/VERSION embedded/agentics/**
+var methodology embed.FS
+
+func Methodology() fs.FS {
+	root, err := fs.Sub(methodology, "embedded")
+	if err != nil {
+		panic(err)
+	}
+	return root
 }
 
-func New() Locator {
-	workingDir, _ := os.Getwd()
-	executable, _ := os.Executable()
-	return Locator{Executable: executable, WorkingDir: workingDir}
-}
-
-func (l Locator) Find() (string, error) {
-	if configured := os.Getenv("IASI_SOURCE_ROOT"); configured != "" {
-		return validate(configured)
+func Version() (string, error) {
+	data, err := fs.ReadFile(methodology, "embedded/VERSION")
+	if err != nil {
+		return "", fmt.Errorf("read embedded version: %w", err)
 	}
-	for _, start := range []string{l.WorkingDir, filepath.Dir(l.Executable)} {
-		if start == "" {
-			continue
-		}
-		for current := filepath.Clean(start); ; current = filepath.Dir(current) {
-			if root, err := validate(current); err == nil {
-				return root, nil
-			}
-			parent := filepath.Dir(current)
-			if parent == current {
-				break
-			}
-		}
+	version := strings.TrimSpace(string(data))
+	if version == "" {
+		return "", fmt.Errorf("embedded version is empty")
 	}
-	return "", errors.New("could not locate IASI source directory (agentics)")
-}
-
-func validate(root string) (string, error) {
-	root = filepath.Clean(root)
-	info, err := os.Stat(filepath.Join(root, "agentics"))
-	if err != nil || !info.IsDir() {
-		return "", fmt.Errorf("%s does not contain agentics", root)
-	}
-	return root, nil
+	return version, nil
 }

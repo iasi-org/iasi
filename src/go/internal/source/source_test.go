@@ -1,20 +1,22 @@
 package source
 
 import (
-	"os"
-	"path/filepath"
+	"io/fs"
 	"testing"
 )
 
-func TestFindConfiguredSource(t *testing.T) {
-	root := t.TempDir()
-	if err := os.Mkdir(filepath.Join(root, "agentics"), 0o755); err != nil {
+func TestMethodologyIsEmbedded(t *testing.T) {
+	if _, err := fs.ReadFile(Methodology(), "agentics/instructions/code/style.md"); err != nil {
+		t.Fatalf("expected methodology to be embedded: %v", err)
+	}
+}
+
+func TestVersionIsEmbedded(t *testing.T) {
+	version, err := Version()
+	if err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("IASI_SOURCE_ROOT", root)
-
-	found, err := New().Find()
-	if err != nil || found != root {
-		t.Fatalf("expected %s, got %s, %v", root, found, err)
+	if version != "0.1.0" {
+		t.Fatalf("expected embedded version 0.1.0, got %s", version)
 	}
 }
