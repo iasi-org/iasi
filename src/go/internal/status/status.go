@@ -3,52 +3,51 @@ package status
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"strings"
 
-	"iasi-cli/internal/manifest"
+	"iasi-cli/internal/resolver"
 )
 
 var ErrNotInstalled = errors.New("IASI is not installed for this location")
 
 type Result struct {
-	Path, Type, InstalledVersion string
-	Counts                       map[string]int
+	Layers []Layer
+	Counts map[string]int
+}
+
+type Layer struct {
+	Path, Version string
 }
 
 func Find(start string) (Result, error) {
-	for current := filepath.Clean(start); ; current = filepath.Dir(current) {
-		installation := filepath.Join(current, ".iasi")
-		if info, err := os.Stat(installation); err == nil && info.IsDir() {
-			version, err := manifest.ReadVersion(filepath.Join(installation, "manifest.yml"))
-			if err != nil {
-				return Result{}, err
-			}
-			counts := make(map[string]int)
-			for _, category := range []string{"instructions", "commands", "skills", "mcp", "adapters"} {
-				counts[category] = countFiles(filepath.Join(installation, category))
-			}
-			return Result{Path: installation, Type: "workspace", InstalledVersion: version, Counts: counts}, nil
+	context, err := resolver.Resolve(start)
+	if err != nil {
+		if errors.Is(err, resolver.ErrNotInstalled) {
+			return Result{}, ErrNotInstalled
 		}
-		parent := filepath.Dir(current)
-		if parent == current {
-			break
-		}
+		return Result{}, err
 	}
-	return Result{}, ErrNotInstalled
+	layers := make([]Layer, len(context.Layers))
+	for index, layer := range context.Layers {
+		layers[index] = Layer{Path: layer.Path, Version: layer.Version}
+	}
+	return Result{Layers: layers, Counts: map[string]int{
+		"instructions": len(context.Instructions),
+		"commands":     len(context.Commands),
+		"skills":       len(context.Skills),
+		"mcp":          len(context.MCP),
+		"adapters":     len(context.Adapters),
+	}}, nil
 }
 
 func Format(result Result, binaryVersion string) string {
-	return fmt.Sprintf("IASI\n\nType      : %s\nPath      : %s\nInstalled : %s\nBinary    : %s\n\nInstructions : %d\nCommands     : %d\nSkills       : %d\nMCP          : %d\nAdapters     : %d\n", result.Type, result.Path, result.InstalledVersion, binaryVersion, result.Counts["instructions"], result.Counts["commands"], result.Counts["skills"], result.Counts["mcp"], result.Counts["adapters"])
-}
-
-func countFiles(root string) int {
-	count := 0
-	filepath.Walk(root, func(_ string, info os.FileInfo, err error) error {
-		if err == nil && info.Mode().IsRegular() {
-			count++
-		}
-		return nil
-	})
-	return count
+	var builder strings.Builder
+	builder.WriteString("IASI\n\nBinary : ")
+	builder.WriteString(binaryVersion)
+	builder.WriteString("\n\nLayers (low → high precedence):\n")
+	for index, layer := range result.Layers {
+		fmt.Fprintf(&builder, "  %d. %s  %s\n", index+1, layer.Path, layer.Version)
+	}
+	fmt.Fprintf(&builder, "\nEffective:\n  Instructions : %d\n  Commands     : %d\n  Skills       : %d\n  MCP          : %d\n  Adapters     : %d\n", result.Counts["instructions"], result.Counts["commands"], result.Counts["skills"], result.Counts["mcp"], result.Counts["adapters"])
+	return builder.String()
 }

@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-//go:generate powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/sync-agentics.ps1
+//go:generate powershell -NoProfile -ExecutionPolicy Bypass -File ../../scripts/sync-iasi.ps1
 
-// The build process synchronizes the repository's agentics directory here.
+// The build process synchronizes the repository's canonical IASI tree here.
 //
-//go:embed embedded/VERSION embedded/agentics/**
+//go:embed embedded/VERSION embedded/iasi/**
 var methodology embed.FS
 
 func Methodology() fs.FS {

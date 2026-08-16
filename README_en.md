@@ -49,19 +49,18 @@ The methodology evolves through experience.
 
 ---
 
-# Agentics
+# IASI Structure
 
-The first formalized area within `iasi` is `agentics`.
-
-`agentics` groups the elements used to define how AI agents participate in the engineering process.
+Canonical IASI artifacts live under `iasi/`. They define how AI agents
+participate in the engineering process.
 
 ```text
 iasi/
-└── agentics/
-    ├── instructions/
-    ├── commands/
-    ├── skills/
-    └── mcp/
+├── instructions/
+├── commands/
+├── skills/
+├── mcp/
+└── adapters/
 ```
 
 Each part has a different purpose.
@@ -79,7 +78,7 @@ These definitions are conceptual and should remain independent of each platform'
 
 # Instructions
 
-`agentics/instructions/` contains persistent rules governing agent behavior.
+`iasi/instructions/` contains persistent rules governing agent behavior.
 
 Instructions may define, among other things:
 
@@ -106,8 +105,27 @@ Instructions are designed to be:
 Their common structure is defined in:
 
 ```text
-agentics/instructions/schema/instructions.md
+iasi/instructions/schema/instructions.md
 ```
+
+`iasi/commands/validate.md`, `iasi/commands/archive.md`, and
+`iasi/commands/plan.md` define the canonical `/validate`, `/archive`, and
+`/plan` agentic commands. Adapters may project them to native mechanisms, but
+must not redefine them.
+
+## CLI
+
+```text
+iasi install
+iasi reinstall
+iasi status
+iasi version
+iasi adapt copilot
+```
+
+A valid local installation is identified by `.iasi/manifest.yml`. Installed
+layers in parent directories compose with local layers; `validation.json` is
+local workflow state, not an installed layer.
 
 ---
 

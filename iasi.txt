@@ -1,0 +1,211 @@
+Listado de rutas de carpetas
+El número de serie del volumen es 000000B3 1ECF:A104
+C:.
+¦   iasi.txt
+¦   LICENSE
+¦   README.md
+¦   README_en.md
+¦   VERSION
+¦   
++---adapters
++---agentics
+¦   +---adapters
+¦   ¦   +---copilot
+¦   ¦   ¦       adapter.yml
+¦   ¦   ¦       README.md
+¦   ¦   ¦       
+¦   ¦   +---schema
+¦   ¦           adapter.md
+¦   ¦           
+¦   +---instructions
+¦       ¦   README.md
+¦       ¦   
+¦       +---code
+¦       ¦       style.md
+¦       ¦       testing.md
+¦       ¦       
+¦       +---diagrams
+¦       ¦       style.md
+¦       ¦       
+¦       +---documentation
+¦       ¦       editorial-conventions.md
+¦       ¦       sources.md
+¦       ¦       structure.md
+¦       ¦       style.md
+¦       ¦       
+¦       +---general
+¦       ¦       behavior.md
+¦       ¦       human-control.md
+¦       ¦       precedence.md
+¦       ¦       tool-use.md
+¦       ¦       uncertainty.md
+¦       ¦       validation.md
+¦       ¦       
+¦       +---knowledge
+¦       ¦       inputs-handling.md
+¦       ¦       inputs-structure.md
+¦       ¦       
+¦       +---schema
+¦               instructions.md
+¦               
++---bin
+¦       iasi.exe
+¦       
++---inputs
+¦   +---externals
+¦   ¦   +---adapters
+¦   ¦   ¦       00-scope.md
+¦   ¦   ¦       01-adapter-definition.md
+¦   ¦   ¦       02-instruction-generation.md
+¦   ¦   ¦       03-cli-behavior.md
+¦   ¦   ¦       04-acceptance-tests.md
+¦   ¦   ¦       05-adapter-installation.md
+¦   ¦   ¦       06-resolved-design-points.md
+¦   ¦   ¦       07-initial-specification-closure.md
+¦   ¦   ¦       08-final-clarifications.md
+¦   ¦   ¦       09-preimplementation-readiness.md
+¦   ¦   ¦       
+¦   ¦   +---iasi-cli
+¦   ¦           01-iasi-agentics.md
+¦   ¦           02-iasi-cli.md
+¦   ¦           03-iasi-instructions.md
+¦   ¦           04-iasi-versions.md
+¦   ¦           
+¦   +---internals
+¦   +---obtained
++---src
+¦   +---go
+¦       ¦   go.mod
+¦       ¦   go.sum
+¦       ¦   iasi.exe
+¦       ¦   
+¦       +---cmd
+¦       ¦   +---iasi
+¦       ¦           main.go
+¦       ¦           
+¦       +---internal
+¦       ¦   +---adapters
+¦       ¦   ¦   +---copilot
+¦       ¦   ¦           copilot.go
+¦       ¦   ¦           copilot_test.go
+¦       ¦   ¦           
+¦       ¦   +---install
+¦       ¦   ¦       install.go
+¦       ¦   ¦       install_test.go
+¦       ¦   ¦       
+¦       ¦   +---manifest
+¦       ¦   ¦       manifest.go
+¦       ¦   ¦       
+¦       ¦   +---source
+¦       ¦   ¦   ¦   source.go
+¦       ¦   ¦   ¦   source_test.go
+¦       ¦   ¦   ¦   
+¦       ¦   ¦   +---embedded
+¦       ¦   ¦       ¦   VERSION
+¦       ¦   ¦       ¦   
+¦       ¦   ¦       +---agentics
+¦       ¦   ¦           +---adapters
+¦       ¦   ¦           ¦   +---copilot
+¦       ¦   ¦           ¦   ¦       adapter.yml
+¦       ¦   ¦           ¦   ¦       README.md
+¦       ¦   ¦           ¦   ¦       
+¦       ¦   ¦           ¦   +---schema
+¦       ¦   ¦           ¦           adapter.md
+¦       ¦   ¦           ¦           
+¦       ¦   ¦           +---instructions
+¦       ¦   ¦               ¦   README.md
+¦       ¦   ¦               ¦   
+¦       ¦   ¦               +---code
+¦       ¦   ¦               ¦       style.md
+¦       ¦   ¦               ¦       testing.md
+¦       ¦   ¦               ¦       
+¦       ¦   ¦               +---diagrams
+¦       ¦   ¦               ¦       style.md
+¦       ¦   ¦               ¦       
+¦       ¦   ¦               +---documentation
+¦       ¦   ¦               ¦       editorial-conventions.md
+¦       ¦   ¦               ¦       sources.md
+¦       ¦   ¦               ¦       structure.md
+¦       ¦   ¦               ¦       style.md
+¦       ¦   ¦               ¦       
+¦       ¦   ¦               +---general
+¦       ¦   ¦               ¦       behavior.md
+¦       ¦   ¦               ¦       human-control.md
+¦       ¦   ¦               ¦       precedence.md
+¦       ¦   ¦               ¦       tool-use.md
+¦       ¦   ¦               ¦       uncertainty.md
+¦       ¦   ¦               ¦       validation.md
+¦       ¦   ¦               ¦       
+¦       ¦   ¦               +---knowledge
+¦       ¦   ¦               ¦       inputs-handling.md
+¦       ¦   ¦               ¦       inputs-structure.md
+¦       ¦   ¦               ¦       
+¦       ¦   ¦               +---schema
+¦       ¦   ¦                       instructions.md
+¦       ¦   ¦                       
+¦       ¦   +---status
+¦       ¦           status.go
+¦       ¦           status_test.go
+¦       ¦           
+¦       +---scripts
+¦               sync-agentics.ps1
+¦               
++---workspace
+    +---child-project
+        +---.github
+        ¦   ¦   copilot-instructions.md
+        ¦   ¦   
+        ¦   +---.iasi
+        ¦   ¦       copilot-manifest.yml
+        ¦   ¦       
+        ¦   +---instructions
+        ¦           code.instructions.md
+        ¦           diagrams.instructions.md
+        ¦           documentation.instructions.md
+        ¦           inputs.instructions.md
+        ¦           
+        +---.iasi
+            ¦   manifest.yml
+            ¦   
+            +---adapters
+            ¦   +---copilot
+            ¦   ¦       adapter.yml
+            ¦   ¦       README.md
+            ¦   ¦       
+            ¦   +---schema
+            ¦           adapter.md
+            ¦           
+            +---commands
+            +---instructions
+            ¦   ¦   README.md
+            ¦   ¦   
+            ¦   +---code
+            ¦   ¦       style.md
+            ¦   ¦       testing.md
+            ¦   ¦       
+            ¦   +---diagrams
+            ¦   ¦       style.md
+            ¦   ¦       
+            ¦   +---documentation
+            ¦   ¦       editorial-conventions.md
+            ¦   ¦       sources.md
+            ¦   ¦       structure.md
+            ¦   ¦       style.md
+            ¦   ¦       
+            ¦   +---general
+            ¦   ¦       behavior.md
+            ¦   ¦       human-control.md
+            ¦   ¦       precedence.md
+            ¦   ¦       tool-use.md
+            ¦   ¦       uncertainty.md
+            ¦   ¦       validation.md
+            ¦   ¦       
+            ¦   +---knowledge
+            ¦   ¦       inputs-handling.md
+            ¦   ¦       inputs-structure.md
+            ¦   ¦       
+            ¦   +---schema
+            ¦           instructions.md
+            ¦           
+            +---mcp
+            +---skills

@@ -1,6 +1,7 @@
 package copilot
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -9,7 +10,7 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
-	"iasi-cli/internal/status"
+	"iasi-cli/internal/resolver"
 )
 
 const schemaVersion = 1
@@ -22,12 +23,20 @@ type descriptor struct {
 	Platform      string                 `yaml:"platform"`
 	Supports      map[string]bool        `yaml:"supports"`
 	Instructions  map[string]instruction `yaml:"instructions"`
+	Commands      commandMapping         `yaml:"commands"`
 }
 
 type instruction struct {
 	Type    string `yaml:"type"`
 	Target  string `yaml:"target"`
 	ApplyTo string `yaml:"applyTo"`
+}
+
+type commandMapping struct {
+	Type      string `yaml:"type"`
+	Source    string `yaml:"source"`
+	TargetDir string `yaml:"target_dir"`
+	Suffix    string `yaml:"suffix"`
 }
 
 type metadata struct {
@@ -47,27 +56,30 @@ type output struct {
 }
 
 type generatedManifest struct {
-	SchemaVersion int      `yaml:"schema_version"`
-	Adapter       string   `yaml:"adapter"`
-	IASIVersion   string   `yaml:"iasi_version"`
-	Generated     []string `yaml:"generated"`
+	SchemaVersion      int      `yaml:"schema_version"`
+	Adapter            string   `yaml:"adapter"`
+	ContextFingerprint string   `yaml:"context_fingerprint"`
+	Generated          []string `yaml:"generated"`
 }
 
 func Run(project string) (string, error) {
-	installation, err := status.Find(project)
+	context, err := resolver.Resolve(project)
 	if err != nil {
 		return "", err
 	}
-	adapterRoot := filepath.Join(installation.Path, "adapters", "copilot")
-	desc, err := loadDescriptor(filepath.Join(adapterRoot, "adapter.yml"))
+	adapter, ok := context.Adapters["copilot"]
+	if !ok {
+		return "", errors.New("Copilot adapter is not available in this IASI installation")
+	}
+	desc, err := loadDescriptor(filepath.Join(adapter.Path, "adapter.yml"))
 	if err != nil {
 		return "", err
 	}
-	if !desc.Supports["instructions"] {
+	if !desc.Supports["instructions"] || !desc.Supports["commands"] {
 		return "", errors.New("Copilot adapter does not support instructions")
 	}
 
-	candidates, err := discover(filepath.Join(installation.Path, "instructions"), desc)
+	candidates, err := discover(context.Instructions, desc)
 	if err != nil {
 		return "", err
 	}
@@ -76,11 +88,12 @@ func Run(project string) (string, error) {
 		return "", err
 	}
 
-	outputs, err := buildOutputs(candidates, desc, installation.InstalledVersion)
+	outputs, err := buildOutputs(candidates, context.Commands, desc)
 	if err != nil {
 		return "", err
 	}
-	manifestData, err := marshalManifest(installation.InstalledVersion, outputs)
+	fingerprint := contextFingerprint(context, adapter)
+	manifestData, err := marshalManifest(fingerprint, outputs)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +111,7 @@ func Run(project string) (string, error) {
 	}
 
 	all := outputPaths(outputs)
-	return formatSuccess(installation.Path, project, all), nil
+	return formatSuccess("effective IASI context", project, all), nil
 }
 
 func loadDescriptor(path string) (descriptor, error) {
@@ -116,7 +129,7 @@ func loadDescriptor(path string) (descriptor, error) {
 	if result.SchemaVersion != schemaVersion || result.ID != "copilot" || result.Platform != "github-copilot" {
 		return descriptor{}, errors.New("invalid Copilot adapter descriptor")
 	}
-	if len(result.Instructions) == 0 {
+	if result.Supports["instructions"] && len(result.Instructions) == 0 {
 		return descriptor{}, errors.New("Copilot adapter has no instruction mappings")
 	}
 	for scope, mapping := range result.Instructions {
@@ -130,54 +143,29 @@ func loadDescriptor(path string) (descriptor, error) {
 			return descriptor{}, fmt.Errorf("missing applyTo for scope: %s", scope)
 		}
 	}
+	if result.Supports["commands"] {
+		if result.Commands.Type != "prompt" || result.Commands.Source != "commands" || result.Commands.TargetDir == "" || result.Commands.Suffix == "" {
+			return descriptor{}, errors.New("invalid Copilot command mapping")
+		}
+		if err := validateTarget(filepath.ToSlash(filepath.Join(result.Commands.TargetDir, "command"+result.Commands.Suffix))); err != nil {
+			return descriptor{}, err
+		}
+	}
 	return result, nil
 }
 
-func discover(root string, desc descriptor) ([]candidate, error) {
+func discover(instructions map[string]resolver.Instruction, desc descriptor) ([]candidate, error) {
 	var candidates []candidate
-	ids := map[string]string{}
-	err := filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
+	for _, item := range instructions {
+		if item.Status != "active" && item.Status != "draft" && item.Status != "deprecated" {
+			return nil, fmt.Errorf("invalid instruction status %q: %s", item.Status, item.Path)
 		}
-		if info.IsDir() {
-			if path != root && filepath.Base(path) == "schema" {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		base := filepath.Base(path)
-		if !strings.HasSuffix(strings.ToLower(base), ".md") || strings.HasPrefix(strings.ToLower(base), "readme") {
-			return nil
-		}
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-		meta, body, err := parseInstruction(data)
-		if err != nil {
-			return fmt.Errorf("invalid instruction %s: %w", path, err)
-		}
-		if meta.ID == "" || meta.Status == "" || meta.Scope == "" {
-			return fmt.Errorf("instruction metadata is incomplete: %s", path)
-		}
-		if meta.Status != "active" && meta.Status != "draft" && meta.Status != "deprecated" {
-			return fmt.Errorf("invalid instruction status %q: %s", meta.Status, path)
-		}
-		if old, exists := ids[meta.ID]; exists {
-			return fmt.Errorf("duplicate instruction ID %q in %s and %s", meta.ID, old, path)
-		}
-		ids[meta.ID] = path
-		if meta.Status == "active" {
-			if _, ok := desc.Instructions[meta.Scope]; !ok {
-				return fmt.Errorf("Unsupported instruction scope for Copilot adapter: %s", meta.Scope)
+		if item.Status == "active" {
+			if _, ok := desc.Instructions[item.Scope]; !ok {
+				return nil, fmt.Errorf("Unsupported instruction scope for Copilot adapter: %s", item.Scope)
 			}
 		}
-		candidates = append(candidates, candidate{ID: meta.ID, Scope: meta.Scope, Status: meta.Status, Body: body, Path: path})
-		return nil
-	})
-	if err != nil {
-		return nil, err
+		candidates = append(candidates, candidate{ID: item.ID, Scope: item.Scope, Status: item.Status, Body: item.Body, Path: item.Path})
 	}
 	sort.Slice(candidates, func(i, j int) bool { return candidates[i].ID < candidates[j].ID })
 	return candidates, nil
@@ -202,7 +190,7 @@ func parseInstruction(data []byte) (metadata, string, error) {
 	return result, body, nil
 }
 
-func buildOutputs(candidates []candidate, desc descriptor, version string) ([]output, error) {
+func buildOutputs(candidates []candidate, commands map[string]resolver.Command, desc descriptor) ([]output, error) {
 	groups := map[string][]candidate{}
 	for _, candidate := range candidates {
 		if candidate.Status == "active" {
@@ -219,9 +207,7 @@ func buildOutputs(candidates []candidate, desc descriptor, version string) ([]ou
 			builder.WriteString(mapping.ApplyTo)
 			builder.WriteString("\"\n---\n\n")
 		}
-		builder.WriteString("<!-- IASI-GENERATED: copilot; version=")
-		builder.WriteString(version)
-		builder.WriteString(" -->\nGenerated from IASI. Do not edit this file manually.\n\n")
+		builder.WriteString("<!-- IASI-GENERATED: copilot; schema=1 -->\nGenerated from IASI. Do not edit this file manually.\n\n")
 		for _, item := range items {
 			builder.WriteString("## IASI: ")
 			builder.WriteString(item.ID)
@@ -233,6 +219,23 @@ func buildOutputs(candidates []candidate, desc descriptor, version string) ([]ou
 			builder.WriteByte('\n')
 		}
 		outputs = append(outputs, output{Path: mapping.Target, Data: []byte(builder.String())})
+	}
+	commandIDs := make([]string, 0, len(commands))
+	for id := range commands {
+		commandIDs = append(commandIDs, id)
+	}
+	sort.Strings(commandIDs)
+	for _, id := range commandIDs {
+		command := commands[id]
+		target := filepath.ToSlash(filepath.Join(desc.Commands.TargetDir, id+desc.Commands.Suffix))
+		if err := validateTarget(target); err != nil {
+			return nil, err
+		}
+		content := "<!-- IASI-GENERATED: copilot; schema=1 -->\nGenerated from IASI. Do not edit this file manually.\n\n" + command.Content
+		if !strings.HasSuffix(content, "\n") {
+			content += "\n"
+		}
+		outputs = append(outputs, output{Path: target, Data: []byte(content)})
 	}
 	sort.Slice(outputs, func(i, j int) bool { return outputs[i].Path < outputs[j].Path })
 	return outputs, nil
@@ -253,7 +256,7 @@ func loadManifest(path string) (generatedManifest, bool, error) {
 	if err := yaml.Unmarshal(data, &result); err != nil {
 		return generatedManifest{}, true, fmt.Errorf("invalid Copilot manifest: %w", err)
 	}
-	if result.SchemaVersion != schemaVersion || result.Adapter != "copilot" {
+	if result.SchemaVersion != schemaVersion || result.Adapter != "copilot" || result.ContextFingerprint == "" {
 		return generatedManifest{}, true, errors.New("invalid Copilot manifest")
 	}
 	for _, path := range result.Generated {
@@ -264,13 +267,37 @@ func loadManifest(path string) (generatedManifest, bool, error) {
 	return result, true, nil
 }
 
-func marshalManifest(version string, outputs []output) ([]byte, error) {
+func marshalManifest(fingerprint string, outputs []output) ([]byte, error) {
 	paths := outputPaths(outputs)
-	data, err := yaml.Marshal(generatedManifest{SchemaVersion: schemaVersion, Adapter: "copilot", IASIVersion: version, Generated: paths})
+	data, err := yaml.Marshal(generatedManifest{SchemaVersion: schemaVersion, Adapter: "copilot", ContextFingerprint: fingerprint, Generated: paths})
 	if err != nil {
 		return nil, err
 	}
 	return append([]byte("# IASI-GENERATED: copilot\n"), data...), nil
+}
+
+func contextFingerprint(context resolver.Context, adapter resolver.Adapter) string {
+	var builder strings.Builder
+	builder.Write(adapter.Content)
+	instructionIDs := make([]string, 0, len(context.Instructions))
+	for id := range context.Instructions {
+		instructionIDs = append(instructionIDs, id)
+	}
+	sort.Strings(instructionIDs)
+	for _, id := range instructionIDs {
+		item := context.Instructions[id]
+		fmt.Fprintf(&builder, "\ninstruction\x00%s\x00%s\x00%s\x00%s", item.ID, item.Status, item.Scope, item.Body)
+	}
+	commandIDs := make([]string, 0, len(context.Commands))
+	for id := range context.Commands {
+		commandIDs = append(commandIDs, id)
+	}
+	sort.Strings(commandIDs)
+	for _, id := range commandIDs {
+		fmt.Fprintf(&builder, "\ncommand\x00%s\x00%s", id, context.Commands[id].Content)
+	}
+	sum := sha256.Sum256([]byte(builder.String()))
+	return fmt.Sprintf("%x", sum)
 }
 
 func preflight(project string, outputs []output, manifest output, stale []string) error {

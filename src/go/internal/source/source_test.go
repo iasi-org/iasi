@@ -6,8 +6,11 @@ import (
 )
 
 func TestMethodologyIsEmbedded(t *testing.T) {
-	if _, err := fs.ReadFile(Methodology(), "agentics/instructions/code/style.md"); err != nil {
+	if _, err := fs.ReadFile(Methodology(), "iasi/instructions/code/style.md"); err != nil {
 		t.Fatalf("expected methodology to be embedded: %v", err)
+	}
+	if _, err := fs.ReadFile(Methodology(), "iasi/adapters/copilot/adapter.yml"); err != nil {
+		t.Fatalf("expected adapter to be embedded: %v", err)
 	}
 }
 

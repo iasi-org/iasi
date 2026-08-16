@@ -49,19 +49,18 @@ La metodología evoluciona con la experiencia.
 
 ---
 
-# Agentics
+# Estructura IASI
 
-La primera área formalizada dentro de `iasi` es `agentics`.
-
-`agentics` agrupa los elementos que permiten definir cómo participan los agentes de IA en el proceso de ingeniería.
+Los artefactos canónicos de IASI viven bajo `iasi/`. Definen cómo participan
+los agentes de IA en el proceso de ingeniería.
 
 ```text
 iasi/
-└── agentics/
-    ├── instructions/
-    ├── commands/
-    ├── skills/
-    └── mcp/
+├── instructions/
+├── commands/
+├── skills/
+├── mcp/
+└── adapters/
 ```
 
 Cada pieza cumple una función distinta.
@@ -77,9 +76,9 @@ Estas definiciones son conceptuales y deben permanecer independientes de la impl
 
 ---
 
-# Instructions
+# Instrucciones
 
-`agentics/instructions/` contiene reglas persistentes que gobiernan el comportamiento de los agentes.
+`iasi/instructions/` contiene reglas persistentes que gobiernan el comportamiento de los agentes.
 
 Las instrucciones pueden definir, entre otras cosas:
 
@@ -106,8 +105,27 @@ Las instrucciones se diseñan para ser:
 Su estructura común se define en:
 
 ```text
-agentics/instructions/schema/instructions.md
+iasi/instructions/schema/instructions.md
 ```
+
+`iasi/commands/validate.md`, `iasi/commands/archive.md` y
+`iasi/commands/plan.md` definen los comandos agénticos canónicos `/validate`,
+`/archive` y `/plan`. Los adapters pueden proyectarlos a mecanismos nativos,
+pero no redefinirlos.
+
+## CLI
+
+```text
+iasi install
+iasi reinstall
+iasi status
+iasi version
+iasi adapt copilot
+```
+
+Una instalación local válida se identifica por `.iasi/manifest.yml`. Las capas
+instaladas en directorios padre se combinan con las locales; `validation.json`
+es estado local de workflow, no una capa instalada.
 
 ---
 

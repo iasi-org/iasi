@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"flag"
 	"fmt"
 	"os"
 
@@ -21,7 +20,7 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: iasi version | iasi install --workspace | iasi status")
+		return errors.New("usage: iasi version | iasi install | iasi reinstall | iasi status | iasi adapt copilot")
 	}
 
 	switch args[0] {
@@ -51,15 +50,10 @@ func run(args []string) error {
 		fmt.Printf("IASI %s\n", version)
 		return nil
 
-	case "install":
-		installFlags := flag.NewFlagSet("install", flag.ContinueOnError)
-		installFlags.SetOutput(os.Stderr)
-		workspace := installFlags.Bool("workspace", false, "install IASI in the current workspace")
-		if err := installFlags.Parse(args[1:]); err != nil {
-			return err
-		}
-		if !*workspace || installFlags.NArg() != 0 {
-			return errors.New("usage: iasi install --workspace")
+	case "install", "reinstall":
+		command := args[0]
+		if len(args) != 1 {
+			return errors.New("usage: iasi " + command)
 		}
 
 		cwd, err := os.Getwd()
@@ -70,7 +64,11 @@ func run(args []string) error {
 		if err != nil {
 			return err
 		}
-		_, err = install.Run(cwd, source.Methodology(), version)
+		if command == "reinstall" {
+			_, err = install.Reinstall(cwd, source.Methodology(), version)
+		} else {
+			_, err = install.Run(cwd, source.Methodology(), version)
+		}
 		return err
 
 	case "status":
