@@ -39,6 +39,8 @@ func TestRunUsesInstalledContentAndGeneratesDeterministically(t *testing.T) {
 	writeFile(t, filepath.Join(workspace, ".iasi", "commands", "validate.md"), "Validate the project.")
 	writeFile(t, filepath.Join(workspace, ".iasi", "commands", "archive.md"), "Archive one input.")
 	writeFile(t, filepath.Join(workspace, ".iasi", "commands", "plan.md"), "Plan the iteration.")
+	writeFile(t, filepath.Join(workspace, ".iasi", "commands", "execute.md"), "Execute the validated plan.")
+	writeFile(t, filepath.Join(workspace, ".iasi", "commands", "verify.md"), "Verify the result.")
 
 	first, err := Run(project)
 	if err != nil {
@@ -73,6 +75,14 @@ func TestRunUsesInstalledContentAndGeneratesDeterministically(t *testing.T) {
 	planPrompt, err := os.ReadFile(filepath.Join(project, ".github", "prompts", "plan.prompt.md"))
 	if err != nil || !strings.Contains(string(planPrompt), "Plan the iteration.") {
 		t.Fatalf("plan prompt was not generated: %s (%v)", planPrompt, err)
+	}
+	executePrompt, err := os.ReadFile(filepath.Join(project, ".github", "prompts", "execute.prompt.md"))
+	if err != nil || !strings.Contains(string(executePrompt), "Execute the validated plan.") {
+		t.Fatalf("execute prompt was not generated: %s (%v)", executePrompt, err)
+	}
+	verifyPrompt, err := os.ReadFile(filepath.Join(project, ".github", "prompts", "verify.prompt.md"))
+	if err != nil || !strings.Contains(string(verifyPrompt), "Verify the result.") {
+		t.Fatalf("verify prompt was not generated: %s (%v)", verifyPrompt, err)
 	}
 	if _, err := Run(project); err != nil {
 		t.Fatal(err)

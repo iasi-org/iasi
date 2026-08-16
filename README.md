@@ -108,10 +108,10 @@ Su estructura común se define en:
 iasi/instructions/schema/instructions.md
 ```
 
-`iasi/commands/validate.md`, `iasi/commands/archive.md` y
-`iasi/commands/plan.md` definen los comandos agénticos canónicos `/validate`,
-`/archive` y `/plan`. Los adapters pueden proyectarlos a mecanismos nativos,
-pero no redefinirlos.
+`iasi/commands/validate.md`, `iasi/commands/plan.md`,
+`iasi/commands/execute.md`, `iasi/commands/verify.md` y
+`iasi/commands/archive.md` definen los comandos agénticos canónicos. Los
+adapters pueden proyectarlos a mecanismos nativos, pero no redefinirlos.
 
 ## CLI
 
@@ -125,7 +125,7 @@ iasi adapt copilot
 
 Una instalación local válida se identifica por `.iasi/manifest.yml`. Las capas
 instaladas en directorios padre se combinan con las locales; `validation.json`
-es estado local de workflow, no una capa instalada.
+y `workflow.json` son estado local de workflow, no capas instaladas.
 
 ---
 

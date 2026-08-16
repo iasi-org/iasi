@@ -44,3 +44,15 @@ and semantic-failure outcomes. Use `schema_version: 1`, `status` (`passed` or
 input paths and contents, and this effective command deterministically with
 SHA-256. A failed, missing, or stale local state blocks later IASI workflow
 phases. Validation state is local to the project and is never inherited.
+
+Persist shared `.iasi/workflow.json` atomically with the validation result. A
+successful validation from `INPUTS` produces `INPUTS_VALIDATED`; a successful
+validation after `PLANNED` produces `PLAN_VALIDATED`. A failure persists
+`failed_command = validate` and must not leave a prior checkpoint usable.
+
+After determining the result, invoke the shared runtime rather than writing
+either state file directly:
+
+```text
+iasi __runtime validate <passed|failed> <blockers> <warnings>
+```

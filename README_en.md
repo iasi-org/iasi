@@ -108,10 +108,10 @@ Their common structure is defined in:
 iasi/instructions/schema/instructions.md
 ```
 
-`iasi/commands/validate.md`, `iasi/commands/archive.md`, and
-`iasi/commands/plan.md` define the canonical `/validate`, `/archive`, and
-`/plan` agentic commands. Adapters may project them to native mechanisms, but
-must not redefine them.
+`iasi/commands/validate.md`, `iasi/commands/plan.md`,
+`iasi/commands/execute.md`, `iasi/commands/verify.md`, and
+`iasi/commands/archive.md` define the canonical agentic commands. Adapters may
+project them to native mechanisms, but must not redefine them.
 
 ## CLI
 
@@ -124,8 +124,8 @@ iasi adapt copilot
 ```
 
 A valid local installation is identified by `.iasi/manifest.yml`. Installed
-layers in parent directories compose with local layers; `validation.json` is
-local workflow state, not an installed layer.
+layers in parent directories compose with local layers; `validation.json` and
+`workflow.json` are local workflow state, not installed layers.
 
 ---
 

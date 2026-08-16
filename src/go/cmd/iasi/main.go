@@ -7,6 +7,7 @@ import (
 
 	"iasi-cli/internal/adapters/copilot"
 	"iasi-cli/internal/install"
+	"iasi-cli/internal/runtime"
 	"iasi-cli/internal/source"
 	"iasi-cli/internal/status"
 )
@@ -14,6 +15,9 @@ import (
 func main() {
 	if err := run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		if runtimeError, ok := err.(*runtime.Error); ok {
+			os.Exit(runtimeError.Code)
+		}
 		os.Exit(1)
 	}
 }
@@ -24,6 +28,18 @@ func run(args []string) error {
 	}
 
 	switch args[0] {
+	case "__runtime":
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("get current directory: %w", err)
+		}
+		output, err := runtime.Run(cwd, args[1:])
+		if err != nil {
+			return err
+		}
+		fmt.Print(output)
+		return nil
+
 	case "adapt":
 		if len(args) != 2 || args[1] != "copilot" {
 			return errors.New("usage: iasi adapt copilot")

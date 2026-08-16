@@ -33,4 +33,7 @@ an execution or configuration error.
 Do not create archive metadata or iteration state. Archived inputs are
 historical and excluded from `/validate` input discovery and active-input
 fingerprints. Moving an active input to `archived/` therefore makes any prior
-validation state stale.
+validation state stale. `/archive` is not a forward checkpoint: it must not
+grant permission for `/plan`, `/execute`, or `/verify`. Shared workflow state
+must invalidate checkpoints whose active-input fingerprint changed, without
+clearing a failed stage to bypass its gate.

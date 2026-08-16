@@ -127,12 +127,24 @@ func HashInstructions(context resolver.Context) string {
 
 func HashInputs(project string) (string, error) {
 	root := filepath.Join(project, "inputs")
+	return HashInputsAt(root,
+		filepath.Join(root, "externals", "archived"),
+		filepath.Join(root, "internals", "archived"),
+		filepath.Join(root, "obtained", "archived"),
+	)
+}
+
+func HashInputsAt(root string, excluded ...string) (string, error) {
+	skipped := map[string]bool{}
+	for _, path := range excluded {
+		skipped[filepath.Clean(path)] = true
+	}
 	var paths []string
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		if entry.IsDir() && path != root && entry.Name() == "archived" {
+		if entry.IsDir() && skipped[filepath.Clean(path)] {
 			return filepath.SkipDir
 		}
 		if !entry.IsDir() {
