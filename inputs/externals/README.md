@@ -65,10 +65,11 @@ inputs/externals/
 ├── command_plan/
 ├── command_execute/
 ├── command_verify/
-└── command_archive/
+├── command_archive/
+└── skill_define/
 ```
 
-The eight groups form one normative contract:
+The nine groups form one normative contract:
 
 - `iasi-cli/` defines distribution, installation, resolution and common architecture.
 - `adapters/` defines platform projection, currently GitHub Copilot.
@@ -78,6 +79,7 @@ The eight groups form one normative contract:
 - `command_execute/` defines `/execute`.
 - `command_verify/` defines `/verify`.
 - `command_archive/` defines `/archive`.
+- `skill_define/` defines the normative semantic contract for the `define` skill.
 
 There is no historical-precedence chain between documents in this package. They MUST be mutually consistent.
 
